@@ -14,6 +14,8 @@ typedef struct block block;
 
 // create a lock for the thread-safe malloc/free lock version
 pthread_mutex_t lock;
+// create a second block for locking sbrk() function
+pthread_mutex_t sbrk_lock;
 
 struct block {
   // meta data

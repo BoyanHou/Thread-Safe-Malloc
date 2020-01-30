@@ -1,8 +1,12 @@
 #define NDEBUG
 #include "my_malloc.h" 
 
-block* head = NULL;
-block* free_head = NULL;
+// block* head = NULL;
+// block* free_head = NULL;
+
+__thread block* head = NULL;
+__thread block* free_head = NULL;
+
 
 ///////////////////////////////////////
 // common methods for ff and bf:
@@ -387,9 +391,14 @@ void* allocate_from_ready_block(block* block_ptr) {
 //     is_free = TRUE
 //     size = requried_bytes
 //     check_number = CHECK_NUMBER
+//   !! added for thread safety: use sbrk_lock to lock sbrk() function
 block* make_new_free_block(size_t required_bytes){
+  // lock critical section sbrk(0)
+  pthread_mutex_lock(&sbrk_lock);
   block* block_ptr = sbrk(0);
   sbrk(META_SIZE + required_bytes);
+  // unlock critical section sbrk(0)
+  pthread_mutex_unlock(&sbrk_lock);
   // configure the block:
   block_ptr->is_free = TRUE;
   block_ptr->size = required_bytes;
@@ -576,3 +585,33 @@ void ts_free_lock(void *ptr) {
   pthread_mutex_unlock(&lock);
   return;
 }
+
+////////////////////////////////
+///
+///  Thread Safe Malloc/Free
+///     NO lock version: using TLS
+///
+////////////////////////////////
+
+// Function Name: ts_malloc_nolock
+// input(s): required space size
+// output(s): a pointer to a block's user space
+// What it does:
+//   Based on malloc_ff()
+//   Use Thread Local Storage to create individual linked-lists
+//   for each thread
+//   The difference is list head & tail are declared as "__thread" now 
+void *ts_malloc_nolock(size_t size) {
+  return bf_malloc(size);
+}
+
+// Function Name: ts_free_nolock
+// input(s): a pointer to the user section of a block
+// What it does:
+//   Based on bf_free()
+//   Use TLS to create individual linked-lists for each thread
+//   The difference is list head & tail are declared as "__thread" now
+void ts_free_nolock(void *ptr) {
+  bf_free(ptr);
+}
+
