@@ -1,5 +1,6 @@
 #include <unistd.h>
 #include <assert.h>
+#include <pthread.h> // for pthread locks
 
 #define TRUE 1
 #define FALSE 0
@@ -11,6 +12,8 @@
 // blocks are stored as doubly linked list
 typedef struct block block;
 
+// create a lock for the thread-safe malloc/free lock version
+pthread_mutex_t lock;
 
 struct block {
   // meta data
@@ -260,32 +263,6 @@ unsigned long get_data_segment_size();
 unsigned long get_data_segment_free_space_size();
 
 //////////////////////////
-//  FIRST FIT
-//////////////////////////
-
-// Function Name: ff_malloc
-// input(s):
-//   required bytes of memory allocation
-// output(s):
-//   a pointer to the user data segment of the allocated block
-// What it does:
-//   Start from the head block of the free list (free_head)
-//   Whenever a big enough block is found, do:
-//     record that block and BREAK
-
-//   After the iteration, use:
-//     iteration_record_post_process
-//   to get the pointer to the ready-to-use user data segment
-void *ff_malloc(size_t required_bytes);
-
-// Function Name: ff_free
-// input(s):
-//   pointer to the user data segment of a block
-// What it does:
-//   free the designated block, using the method "common_free"
-void ff_free(void *ptr);
-
-//////////////////////////
 // BEST FIT
 //////////////////////////
 
@@ -314,3 +291,22 @@ void* bf_malloc (size_t required_bytes);
 // What it does:
 //   free the designated block, using the method "common_free"
 void bf_free (void *ptr);
+
+
+////////////////////////////////
+///
+///  Thread Safe Malloc/Free
+///       lock version
+///
+////////////////////////////////
+void *ts_malloc_lock(size_t size);
+void ts_free_lock(void *ptr); 
+
+////////////////////////////////
+///
+///  Thread Safe Malloc/Free
+///       NO lock version
+///
+////////////////////////////////
+void *ts_malloc_nolock(size_t size);
+void ts_free_nolock(void *ptr);

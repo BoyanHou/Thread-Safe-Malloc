@@ -488,48 +488,6 @@ unsigned long get_data_segment_free_space_size() {
   return space_record;
 }
 
-//////////////////////////
-//  FIRST FIT
-//////////////////////////
-
-// Function Name: ff_malloc
-// input(s):
-//   required bytes of memory allocation
-// output(s):
-//   a pointer to the user data segment of the allocated block
-// What it does:
-//   Start from the head block of the free list (free_head)
-//   Whenever a big enough block is found, do:
-//     record that block and BREAK
-
-//   After the iteration, use:
-//     iteration_record_post_process
-//   to get the pointer to the ready-to-use user data segment
-void *ff_malloc(size_t required_bytes) {
-  block* ff_record = NULL;
-  block* it = free_head;
-  // iterate through free list
-  while (it != NULL) {
-    if (it->size >= required_bytes) {
-      ff_record = it;
-      break;
-    } else {
-      it = it->next_free;
-    }
-  }
-  void* allocation = iteration_record_post_process(ff_record,
-						   required_bytes);
-  return allocation;
-} 
-
-// Function Name: ff_free
-// input(s):
-//   pointer to the user data segment of a block
-// What it does:
-//   free the designated block, using the method "common_free"
-void ff_free(void *ptr) {
-  common_free(ptr);
-}
 
 //////////////////////////
 // BEST FIT
@@ -579,4 +537,42 @@ void bf_free (void *ptr) {
   common_free(ptr);
 }
 
+////////////////////////////////
+///
+///  Thread Safe Malloc/Free
+///       lock version
+///
+////////////////////////////////
 
+// Function Name: ts_malloc_lock
+// input(s): size of required space
+// ouput(s): a pointer to a block's user space
+// What it does:
+//   Based on the bf_malloc (BEST FIT) function
+//   lock before entering bf_malloc
+//   unlock after bf_malloc
+//   !! share the same lock with ts_free_lock
+void *ts_malloc_lock(size_t size) {
+  // critical section: lock
+  pthread_mutex_lock(&lock);  
+  void* ptr = bf_malloc(size);
+  // critical section: unlock
+  pthread_mutex_unlock(&lock);
+  return ptr;
+}
+
+// Function Name: ts_free_lock
+// input(s): a pointer to the user section of a block
+// What it does:
+//   based on the bf_free function
+//   lock before entering bf_free
+//   unlock after bf_free
+//   !! share the same lock with ts_malloc_lock
+void ts_free_lock(void *ptr) {
+  // critical section: lock
+  pthread_mutex_lock(&lock);
+  bf_free(ptr);
+  // critical section: unlock
+  pthread_mutex_unlock(&lock);
+  return;
+}
