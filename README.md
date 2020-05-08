@@ -7,4 +7,6 @@
   <br>
 - Features:    
   1. No-Lock Synchronization for multithreading:  
-    By using Local Thread Storage (LTS), each thread will be allocated a 
+    By using Local Thread Storage (LTS), each thread is given a local storage for storing their pointer to the free list's head. In doing so, each thread will have its own free list of blocks while sharing the non-free blocks with all other threads, hence no race condition could be possibly raised between any two threads.  
+  2. Auto-merging of newly freed region with any currently free adjacent regions: 
+    The bookkeeping data structure would not contain multiple adjacent free regions, as this would lead to poor region selection during malloc.   
