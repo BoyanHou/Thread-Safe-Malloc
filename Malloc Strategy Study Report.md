@@ -1,6 +1,4 @@
-# Malloc Strategy Study Report
-
-
+# First-Fit & Best-Fit Malloc Strategy Implementation & Study Report
 
 ## 1  Project Overview
 
